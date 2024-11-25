@@ -1,0 +1,82 @@
+---
+title: '"Taylor Swift only writes about her exes." Really?'
+output: html_document
+---
+
+### Loading packages
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+### Processing the data
+
+```{r}
+spotify = read_csv("~/Downloads/ts-data/taylor_swift_spotify.csv")
+lyrics = read_csv("~/Downloads/ts-data/songs.csv")
+
+spotify = spotify %>%
+  rename("title" = "name", "duration" = "duration_ms") %>%
+  select(title, album, release_date, track_number, tempo, duration) %>%
+  filter(album %in% c('THE TORTURED POETS DEPARTMENT: THE ANTHOLOGY',
+                      'Midnights (The Til Dawn Edition)',
+                      'evermore (deluxe version)',
+                      'folklore (deluxe version)',
+                      'Lover',
+                      'reputation',
+                      '1989 (Taylor\'s Version) [Deluxe]', # IDK
+                      'Red (Taylor\'s Version)',
+                      'Speak Now (Taylor\'s Version)',
+                      'Fearless (Taylor\'s Version)', # IDK
+                      'Taylor Swift (Deluxe Edition)'), # IDK
+         !(title %in% c('Snow On The Beach (feat. More Lana Del Rey)',
+                        'Karma (feat. Ice Spice)',
+                        'Teardrops on My Guitar - Pop Version'))) %>%
+  # Making album names consistent and converting duration from ms to seconds
+  mutate(album = recode_factor(album,
+                        'THE TORTURED POETS DEPARTMENT: THE ANTHOLOGY' = "The Tortured Poets Department",
+                        'Midnights (The Til Dawn Edition)' = "Midnights",
+                        'evermore (deluxe version)' = "evermore",
+                        'folklore (deluxe version)' = "folklore",
+                        '1989 (Taylor\'s Version) [Deluxe]' = "1989 (Taylor's Version)",
+                        'Taylor Swift (Deluxe Edition)' = "Taylor Swift"),
+         duration = duration / 1000)
+
+lyrics = lyrics %>%
+  filter(Album %in% c("The Tortured Poets Department", "Midnights", "evermore", "folklore", "Lover", "reputation", "1989 (Taylor's Version)",
+                      "Red (Taylor's Version)", "Speak Now (Taylor's Version)", "Fearless (Taylor's Version)", "Taylor Swift"),
+         !(title %in% c('Bad Blood (Remix) (Taylor\'s Version)', 'Sweeter Than Fiction (Taylor\'s Version)')))
+
+# Fixing small title discrepancies for merging
+spotify = spotify %>%
+    mutate(across("Title", str_replace, '’', "'"),
+           across("Title", str_replace, '\\(From The Vault\\)', "\\[From the Vault\\]"))
+lyrics = lyrics %>%
+    mutate(across("Title", str_replace, 'From The Vault', "From the Vault"))
+
+# Songs in lyrics but not in spotify
+# setdiff(lyrics$Title, spotify$Title)
+# Songs in spotify but not in lyrics
+# setdiff(spotify$Title, lyrics$Title)
+
+# Merging the data
+data = full_join(spotify, lyrics, by = "title") %>%
+  select(-Album)
+
+head(data)
+
+# Exporting the data for manual tagging
+write.csv(data, 'ts.csv')
+
+# TODO: resolve duplicates and syntax of songs with features
+
+```
+
+### Exploring the data
+
+```{r, echo=FALSE}
+
+
+```
